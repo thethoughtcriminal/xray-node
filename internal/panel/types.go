@@ -20,11 +20,11 @@ type Inbound struct {
 	Listen         string `json:"listen"`
 	Port           int    `json:"port"`
 	Protocol       string `json:"protocol"`
-	Settings       string `json:"settings"`
-	StreamSettings string `json:"streamSettings"`
-	Tag            string `json:"tag"`
-	Sniffing       string `json:"sniffing"`
-	Allocate       string `json:"allocate"`
+	Settings       JSONField `json:"settings"`
+	StreamSettings JSONField `json:"streamSettings"`
+	Tag            string    `json:"tag"`
+	Sniffing       JSONField `json:"sniffing"`
+	Allocate       JSONField `json:"allocate"`
 }
 
 type ClientTraffic struct {

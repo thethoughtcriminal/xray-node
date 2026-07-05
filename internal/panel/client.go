@@ -122,7 +122,7 @@ func (c *PanelClient) GetClientTraffic(email string) (*ClientTraffic, error) {
 
 func (c *PanelClient) GetInboundClients(inbound Inbound) ([]Client, error) {
 	var settings ClientSettings
-	if err := json.Unmarshal([]byte(inbound.Settings), &settings); err != nil {
+	if err := json.Unmarshal([]byte(inbound.Settings.String()), &settings); err != nil {
 		return nil, fmt.Errorf("parse inbound settings: %w", err)
 	}
 	return settings.Clients, nil
@@ -187,7 +187,11 @@ func (c *PanelClient) do(req *http.Request, out any) error {
 		return err
 	}
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("panel %s %s: %s", req.Method, req.URL.Path, strings.TrimSpace(string(raw)))
+		body := strings.TrimSpace(string(raw))
+		if body == "" {
+			return fmt.Errorf("panel %s %s: HTTP %d (check panel.token and panel.url base path)", req.Method, req.URL.Path, resp.StatusCode)
+		}
+		return fmt.Errorf("panel %s %s: %s", req.Method, req.URL.Path, body)
 	}
 
 	var envelope APIResponse

@@ -76,7 +76,7 @@ func (n *Node) ApplyInbound(spec *inbound.Spec) (*panel.Inbound, error) {
 	// Preserve clients on update unless explicitly provided in config.
 	if clients, ok := spec.Settings["clients"].([]any); !ok || len(clients) == 0 {
 		var current panel.ClientSettings
-		if err := json.Unmarshal([]byte(existing.Settings), &current); err == nil && len(current.Clients) > 0 {
+		if err := json.Unmarshal([]byte(existing.Settings.String()), &current); err == nil && len(current.Clients) > 0 {
 			spec.Settings["clients"] = current.Clients
 			settings, err = spec.SettingsJSON()
 			if err != nil {

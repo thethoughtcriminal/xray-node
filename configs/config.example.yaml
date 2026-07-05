@@ -1,5 +1,8 @@
 panel:
+  # Full panel base URL, including custom web path if set in 3x-ui (Panel Settings → Base Path).
+  # Examples: https://127.0.0.1:2053  or  https://127.0.0.1:2053/aBcDeFgHiJkLmNoPqR/
   url: https://127.0.0.1:2053
+  # API token from 3x-ui: Settings → Authentication → API Tokens (copy plaintext once at creation).
   token: CHANGE_ME_PANEL_API_TOKEN
   insecure_tls: true
 
