@@ -164,7 +164,7 @@ func (n *Node) SetClientEnabled(inboundRemark, email string, enabled bool) error
 }
 
 func (n *Node) ClientStats(inboundRemark, email string) (*panel.ClientTraffic, error) {
-	if _, err := n.findClient(inboundRemark, email); err != nil {
+	if _, _, err := n.findClient(inboundRemark, email); err != nil {
 		return nil, err
 	}
 	return n.panel.GetClientTraffic(email)
