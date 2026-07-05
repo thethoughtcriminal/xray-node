@@ -1,0 +1,10 @@
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+.DS_Store
+.idea/
+.vscode/
+*.local.yaml
+/etc/xray-node/config.local.yaml

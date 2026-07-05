@@ -1,0 +1,22 @@
+remark: hysteria2
+protocol: hysteria
+listen: ""
+port: 10443
+enable: true
+settings:
+  clients: []
+  version: 2
+streamSettings:
+  network: hysteria
+  security: tls
+  hysteriaSettings:
+    version: 2
+    udpIdleTimeout: 60
+  tlsSettings:
+    serverName: example.com
+    alpn:
+      - h3
+    settings:
+      fingerprint: chrome
+sniffing:
+  enabled: false

@@ -1,0 +1,8 @@
+panel:
+  url: https://127.0.0.1:2053
+  token: CHANGE_ME_PANEL_API_TOKEN
+  insecure_tls: true
+
+api:
+  listen: 127.0.0.1:9472
+  key: CHANGE_ME_NODE_API_KEY
