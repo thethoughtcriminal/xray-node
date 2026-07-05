@@ -6,6 +6,7 @@ set -euo pipefail
 #    or: sudo ./scripts/install.sh
 
 REPO_URL="${XRAY_NODE_REPO:-https://github.com/thethoughtcriminal/xray-node.git}"
+REPO_BRANCH="${XRAY_NODE_BRANCH:-main}"
 INSTALL_DIR="${XRAY_NODE_INSTALL_DIR:-/opt/xray-node}"
 CONFIG_PATH="/etc/xray-node/config.yaml"
 BIN_PATH="/usr/local/bin/xray-node"
@@ -42,9 +43,13 @@ install_3xui() {
 
 clone_or_update_repo() {
   if [[ -d "${INSTALL_DIR}/.git" ]]; then
-    git -C "${INSTALL_DIR}" pull --ff-only
+    echo "Updating xray-node source..."
+    git -C "${INSTALL_DIR}" fetch origin "${REPO_BRANCH}"
+    # Drop local/untracked files (e.g. go.sum from a failed build) before sync.
+    git -C "${INSTALL_DIR}" clean -fd
+    git -C "${INSTALL_DIR}" reset --hard "origin/${REPO_BRANCH}"
   else
-    git clone "${REPO_URL}" "${INSTALL_DIR}"
+    git clone --branch "${REPO_BRANCH}" "${REPO_URL}" "${INSTALL_DIR}"
   fi
 }
 
