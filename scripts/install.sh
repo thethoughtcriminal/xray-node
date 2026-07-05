@@ -129,7 +129,7 @@ xray-node installed.
 
 5) Uninstall everything:
    sudo xray-node uninstall
-   # or: curl -fsSL .../scripts/uninstall.sh | sudo bash
+   # or: curl -fsSL .../scripts/uninstall.sh | sudo bash -s --
 
 EOF
 }
