@@ -122,6 +122,10 @@ xray-node installed.
 4) HTTP API (local):
    curl -H "X-API-Key: <key from config>" http://127.0.0.1:9472/healthz
 
+5) Uninstall everything:
+   sudo xray-node uninstall
+   # or: curl -fsSL .../scripts/uninstall.sh | sudo bash
+
 EOF
 }
 

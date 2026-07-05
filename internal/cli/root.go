@@ -17,6 +17,7 @@ func Execute() error {
 		newServeCmd(),
 		newInboundCmd(),
 		newClientCmd(),
+		newUninstallCmd(),
 	)
 	return root.Execute()
 }

@@ -22,6 +22,23 @@ Or from a local clone:
 sudo XRAY_NODE_REPO=file://$(pwd) ./scripts/install.sh
 ```
 
+## Uninstall
+
+Removes xray-node (service, binary, `/etc/xray-node`, `/opt/xray-node`) and **3x-ui / Xray** by default:
+
+```bash
+sudo xray-node uninstall
+# or
+curl -fsSL https://raw.githubusercontent.com/thethoughtcriminal/xray-node/main/scripts/uninstall.sh | sudo bash
+```
+
+Options:
+
+```bash
+sudo xray-node uninstall -y              # no confirmation
+sudo xray-node uninstall --keep-3xui     # remove only xray-node
+```
+
 After install:
 
 1. Open 3x-ui panel, create **API token** (Settings → API).
