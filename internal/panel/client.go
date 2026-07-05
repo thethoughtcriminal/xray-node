@@ -81,6 +81,19 @@ func (c *PanelClient) UpdateInbound(id int, payload map[string]any) (*Inbound, e
 }
 
 func (c *PanelClient) AddClient(inboundID int, client Client) error {
+	body := map[string]any{
+		"client":     clientPayload(client),
+		"inboundIds": []int{inboundID},
+	}
+	if err := c.postJSON("/panel/api/clients/add", body, nil); err == nil {
+		return nil
+	} else if !isHTTP404(err) {
+		return err
+	}
+	return c.addClientLegacy(inboundID, client)
+}
+
+func (c *PanelClient) addClientLegacy(inboundID int, client Client) error {
 	settings, err := json.Marshal(ClientSettings{Clients: []Client{client}})
 	if err != nil {
 		return err
@@ -93,6 +106,18 @@ func (c *PanelClient) AddClient(inboundID int, client Client) error {
 }
 
 func (c *PanelClient) UpdateClient(inboundID int, client Client) error {
+	body := clientPayload(client)
+	body["email"] = client.Email
+	path := fmt.Sprintf("/panel/api/clients/update/%s", url.PathEscape(client.Email))
+	if err := c.postJSON(path, body, nil); err == nil {
+		return nil
+	} else if !isHTTP404(err) {
+		return err
+	}
+	return c.updateClientLegacy(inboundID, client)
+}
+
+func (c *PanelClient) updateClientLegacy(inboundID int, client Client) error {
 	settings, err := json.Marshal(ClientSettings{Clients: []Client{client}})
 	if err != nil {
 		return err
@@ -113,8 +138,14 @@ func (c *PanelClient) SetClientEnabled(inboundID int, client Client, enabled boo
 
 func (c *PanelClient) GetClientTraffic(email string) (*ClientTraffic, error) {
 	var traffic ClientTraffic
-	path := fmt.Sprintf("/panel/api/inbounds/getClientTraffics/%s", url.PathEscape(email))
-	if err := c.getJSON(path, &traffic); err != nil {
+	path := fmt.Sprintf("/panel/api/clients/traffic/%s", url.PathEscape(email))
+	if err := c.getJSON(path, &traffic); err == nil {
+		return &traffic, nil
+	} else if !isHTTP404(err) {
+		return nil, err
+	}
+	legacyPath := fmt.Sprintf("/panel/api/inbounds/getClientTraffics/%s", url.PathEscape(email))
+	if err := c.getJSON(legacyPath, &traffic); err != nil {
 		return nil, err
 	}
 	return &traffic, nil
@@ -149,6 +180,36 @@ func clientClientID(c Client) string {
 		return c.Password
 	}
 	return c.Email
+}
+
+func clientPayload(client Client) map[string]any {
+	payload := map[string]any{
+		"email":      client.Email,
+		"enable":     client.Enable,
+		"expiryTime": client.ExpiryTime,
+		"totalGB":    client.TotalGB,
+		"limitIp":    client.LimitIP,
+	}
+	if client.ID != "" {
+		payload["uuid"] = client.ID
+	}
+	if client.SubID != "" {
+		payload["subId"] = client.SubID
+	}
+	if client.Flow != "" {
+		payload["flow"] = client.Flow
+	}
+	if client.Auth != "" {
+		payload["auth"] = client.Auth
+	}
+	if client.Password != "" {
+		payload["password"] = client.Password
+	}
+	return payload
+}
+
+func isHTTP404(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "HTTP 404")
 }
 
 func (c *PanelClient) getJSON(path string, out any) error {
