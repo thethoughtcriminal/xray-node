@@ -28,8 +28,10 @@ Removes xray-node (service, binary, `/etc/xray-node`, `/opt/xray-node`) and **3x
 
 ```bash
 sudo xray-node uninstall
-# or
-curl -fsSL https://raw.githubusercontent.com/thethoughtcriminal/xray-node/main/scripts/uninstall.sh | sudo bash
+# or (interactive prompt works when piped):
+curl -fsSL https://raw.githubusercontent.com/thethoughtcriminal/xray-node/main/scripts/uninstall.sh | sudo bash -s --
+# without prompt:
+curl -fsSL https://raw.githubusercontent.com/thethoughtcriminal/xray-node/main/scripts/uninstall.sh | sudo bash -s -- --yes
 ```
 
 Options:

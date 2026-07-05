@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Remove xray-node and (by default) 3x-ui installed by scripts/install.sh.
-# Usage: curl -fsSL .../uninstall.sh | sudo bash
-#    or: sudo ./scripts/uninstall.sh [--yes] [--keep-3xui]
+# Usage: curl -fsSL .../uninstall.sh | sudo bash -s --
+#    or: curl -fsSL .../uninstall.sh | sudo bash -s -- --yes
 
 INSTALL_DIR="${XRAY_NODE_INSTALL_DIR:-/opt/xray-node}"
 CONFIG_DIR="/etc/xray-node"
@@ -66,7 +66,17 @@ confirm() {
   else
     echo "  - 3x-ui will be kept (--keep-3xui)"
   fi
-  read -r -p "Continue? [y/N] " reply
+
+  local reply=""
+  if [[ -t 0 ]]; then
+    read -r -p "Continue? [y/N] " reply || true
+  elif [[ -r /dev/tty ]]; then
+    read -r -p "Continue? [y/N] " reply </dev/tty || true
+  else
+    echo "Non-interactive shell: pass --yes to confirm uninstall." >&2
+    exit 1
+  fi
+
   case "${reply}" in
     y | Y | yes | YES) ;;
     *)
@@ -101,11 +111,8 @@ remove_xray_node() {
 remove_3xui() {
   if command -v x-ui >/dev/null 2>&1; then
     echo "Uninstalling 3x-ui via x-ui uninstall..."
-    if [[ "${ASSUME_YES}" -eq 1 ]]; then
-      printf 'y\n' | x-ui uninstall || true
-    else
-      x-ui uninstall || true
-    fi
+    # User already confirmed removal above; x-ui also prompts on stdin.
+    printf 'y\n' | x-ui uninstall || true
     return
   fi
 
