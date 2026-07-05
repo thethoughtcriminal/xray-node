@@ -67,6 +67,8 @@ api:
 ```bash
 # Inbounds
 xray-node inbound apply configs/inbounds/vless-reality.yaml
+# prompts: Port [443], SNI [www.microsoft.com]
+xray-node inbound apply configs/inbounds/vless-reality.yaml --port 8443 --sni deepl.com
 xray-node inbound apply configs/inbounds/hysteria2.yaml
 xray-node inbound list
 
@@ -79,7 +81,7 @@ xray-node client enable --inbound vless-reality --email user@xray-node
 xray-node client stats --inbound vless-reality --email user@xray-node
 ```
 
-`inbound apply` updates an existing inbound by `remark` and **keeps existing clients** unless `settings.clients` is set in YAML.
+`inbound apply` updates an existing inbound by `remark` and **keeps existing clients** unless `settings.clients` is set in YAML. In a terminal it prompts for **port** (all inbounds) and **SNI** (VLESS Reality). Use `--port`, `--sni`, or `--non-interactive` to skip prompts.
 
 For VLESS Reality, generate keys in 3x-ui UI after first apply (or set `realitySettings` in YAML). For Hysteria2, set TLS cert in panel (`Set Cert from Panel`).
 
