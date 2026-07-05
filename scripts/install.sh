@@ -62,6 +62,70 @@ build_binary() {
   )
 }
 
+XUI_INSTALL_RESULT="/etc/x-ui/install-result.env"
+
+configure_panel_from_xui() {
+  local panel_url="" panel_token="" insecure_tls="true"
+
+  if [[ -f "${XUI_INSTALL_RESULT}" ]]; then
+    # shellcheck disable=SC1090
+    source "${XUI_INSTALL_RESULT}"
+    local port="${XUI_PANEL_PORT:-2053}"
+    local base="${XUI_WEB_BASE_PATH:-}"
+    base="${base#/}"
+    base="${base%/}"
+    local scheme="https"
+    if [[ "${XUI_ACCESS_URL:-}" == http://* ]]; then
+      scheme="http"
+    fi
+    panel_url="${scheme}://127.0.0.1:${port}"
+    if [[ -n "${base}" ]]; then
+      panel_url="${panel_url}/${base}"
+    fi
+    panel_token="${XUI_API_TOKEN:-}"
+  fi
+
+  if [[ -z "${panel_token}" ]] && command -v x-ui >/dev/null 2>&1; then
+    panel_token="$(x-ui setting -getApiToken true 2>/dev/null | grep -Eo 'apiToken: .+' | awk '{print $2}' || true)"
+  fi
+
+  if [[ -z "${panel_url}" ]] && command -v x-ui >/dev/null 2>&1; then
+    local settings port base_path
+    settings="$(x-ui settings 2>/dev/null || true)"
+    port="$(echo "${settings}" | grep -Eo 'port: [0-9]+' | awk '{print $2}' | head -1)"
+    base_path="$(echo "${settings}" | grep -Eo 'webBasePath: /[^ ]+' | awk '{print $2}' | head -1)"
+    base_path="${base_path#/}"
+    base_path="${base_path%/}"
+    if [[ -n "${port}" ]]; then
+      if echo "${settings}" | grep -qiE 'not secure with SSL|without SSL|plain HTTP'; then
+        panel_url="http://127.0.0.1:${port}"
+      else
+        panel_url="https://127.0.0.1:${port}"
+      fi
+      if [[ -n "${base_path}" ]]; then
+        panel_url="${panel_url}/${base_path}"
+      fi
+    fi
+  fi
+
+  if [[ -z "${panel_url}" || -z "${panel_token}" ]]; then
+    echo "Could not auto-configure panel; set panel.url and panel.token in ${CONFIG_PATH}"
+    return 1
+  fi
+
+  local tmp
+  tmp="$(mktemp)"
+  awk -v url="${panel_url}" -v token="${panel_token}" -v insecure="${insecure_tls}" '
+    /^  url:/ { print "  url: " url; next }
+    /^  token:/ { print "  token: " token; next }
+    /^  insecure_tls:/ { print "  insecure_tls: " insecure; next }
+    { print }
+  ' "${CONFIG_PATH}" >"${tmp}"
+  mv "${tmp}" "${CONFIG_PATH}"
+  chmod 600 "${CONFIG_PATH}"
+  echo "Configured panel from 3x-ui (${panel_url})"
+}
+
 write_config() {
   mkdir -p /etc/xray-node
   if [[ ! -f "${CONFIG_PATH}" ]]; then
@@ -72,6 +136,9 @@ write_config() {
     echo "Generated node API key in ${CONFIG_PATH}"
   else
     echo "Config exists: ${CONFIG_PATH}"
+  fi
+  if [[ -f "${XUI_INSTALL_RESULT}" ]] || grep -q 'CHANGE_ME_PANEL_API_TOKEN' "${CONFIG_PATH}"; then
+    configure_panel_from_xui || true
   fi
 }
 
@@ -111,20 +178,19 @@ print_next_steps() {
 
 xray-node installed.
 
-1) Create API token in 3x-ui:
-   Panel Settings -> API -> Create token
-   Put it into ${CONFIG_PATH} as panel.token
+Panel URL and API token were auto-configured from 3x-ui when possible.
+Credentials: /etc/x-ui/install-result.env
 
-2) Restart API:
-   systemctl restart xray-node
+1) Verify panel access:
+   xray-node inbound list
 
-3) Examples:
+2) Examples:
    xray-node inbound list
    xray-node inbound apply ${INSTALL_DIR}/configs/inbounds/vless-reality.yaml
    xray-node client add --inbound vless-reality --email user@node
    xray-node client stats --inbound vless-reality --email user@node
 
-4) HTTP API (local):
+3) HTTP API (local):
    curl -H "X-API-Key: <key from config>" http://127.0.0.1:9472/healthz
 
 5) Uninstall everything:
