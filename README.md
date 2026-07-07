@@ -2,7 +2,8 @@
 
 Management layer for a VPN node running [3x-ui](https://github.com/MHSanaei/3x-ui): declarative inbounds, client lifecycle, traffic stats, CLI + HTTP API.
 
-**Full technical specification:** [docs/TECHNICAL.md](docs/TECHNICAL.md)
+**Full technical specification:** [docs/TECHNICAL.md](docs/TECHNICAL.md)  
+**Agent instructions:** [AGENTS.md](AGENTS.md)
 
 ## Features
 
