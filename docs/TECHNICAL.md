@@ -300,7 +300,7 @@ xray-node client stats   --inbound vless-reality --email user@xray-node
 |-------|------|----------|
 | GET | `/healthz` | `{"status":"ok"}` |
 | GET | `/inbounds` | список inbounds |
-| POST | `/inbounds/apply` | JSON body = `inbound.Spec` |
+| POST | `/inbounds/apply` | JSON body = `inbound.Spec` (финальные port/SNI; без интерактивных override как в CLI) |
 | POST | `/clients` | добавить клиента |
 | POST | `/clients/{email}/enable?inbound=remark` | включить |
 | POST | `/clients/{email}/disable?inbound=remark` | выключить |
@@ -316,6 +316,16 @@ curl -s -X POST \
   -d '{"inbound_remark":"vless-reality","email":"user@xray-node"}'
 ```
 
+**Коды ошибок** (тело `{"error":"..."}`):
+
+| HTTP | Когда |
+|------|-------|
+| 400 | невалидный JSON, spec, отсутствует `inbound` query |
+| 401 | неверный `X-API-Key` |
+| 404 | inbound или client не найден |
+| 409 | клиент уже существует |
+| 502 | ошибка 3x-ui или прочий сбой upstream |
+
 ---
 
 ## 8. Установка с нуля (VPS)
@@ -325,7 +335,7 @@ curl -s -X POST \
 - Ubuntu/Debian (или RHEL с `dnf`)
 - root
 - Открытые порты:
-  - **80/TCP** — LE IP сертификат панели (если `XUI_SSL_MODE=ip`)
+  - **80/TCP** — LE IP сертификат панели (если `XRAY_NODE_XUI_SSL_MODE=ip`)
   - **8443/TCP** — VLESS Reality
   - **10443/UDP** — Hysteria2
   - Порт панели 3x-ui (случайный при установке)
@@ -355,7 +365,7 @@ curl -fsSL https://raw.githubusercontent.com/thethoughtcriminal/xray-node/main/s
 | `XRAY_NODE_REPO` | GitHub URL | репозиторий |
 | `XRAY_NODE_INSTALL_DIR` | `/opt/xray-node` | каталог |
 | `XRAY_NODE_APPLY_INBOUNDS` | `1` | применить шаблоны |
-| `XRAY_NODE_XUI_SSL_MODE` | `ip` | SSL панели: `ip` / `domain` / `none` |
+| `XRAY_NODE_XUI_SSL_MODE` | `ip` | SSL панели: `ip` / `none` (режим `domain` — только при первой установке 3x-ui, см. их install.sh) |
 | `XUI_ACME_HTTP_PORT` | `80` | порт HTTP-01 |
 | `XUI_ACME_EMAIL` | — | email для Let's Encrypt |
 | `XUI_SERVER_IP` | auto | публичный IPv4 |
@@ -367,6 +377,8 @@ sudo XRAY_NODE_XUI_SSL_MODE=none ./scripts/install.sh
 ```
 
 ### 8.5 SSL панели (Let's Encrypt IP)
+
+Режим `domain` в `install.sh` xray-node **не реализован** — для доменного сертификата используйте установку 3x-ui напрямую или настройте SSL в панели вручную.
 
 - Профиль **shortlived** (~6 дней), автообновление через `acme.sh`
 - Сертификаты: `/root/cert/ip/fullchain.pem`, `privkey.pem`
@@ -402,6 +414,8 @@ cd xray-node
 go mod download
 make build                    # → bin/xray-node
 go test ./...
+
+# CI: .github/workflows/ci.yml (go test + go build на push/PR в main)
 
 # локальный запуск API
 ./bin/xray-node serve --config configs/config.example.yaml

@@ -124,7 +124,7 @@ type AddClientInput struct {
 
 func (n *Node) AddClient(in AddClientInput) (*panel.Client, error) {
 	if in.Email == "" {
-		return nil, fmt.Errorf("email is required")
+		return nil, fmt.Errorf("%w: email is required", ErrValidation)
 	}
 	inboundRec, err := n.resolveInbound(in.InboundRemark)
 	if err != nil {
@@ -133,7 +133,7 @@ func (n *Node) AddClient(in AddClientInput) (*panel.Client, error) {
 	if existing, err := n.panel.FindClient(*inboundRec, in.Email); err != nil {
 		return nil, err
 	} else if existing != nil {
-		return nil, fmt.Errorf("client %q already exists on inbound %q", in.Email, inboundRec.Remark)
+		return nil, fmt.Errorf("%w: client %q already exists on inbound %q", ErrConflict, in.Email, inboundRec.Remark)
 	}
 
 	client := panel.Client{
@@ -199,21 +199,21 @@ func (n *Node) findClient(inboundRemark, email string) (*panel.Inbound, *panel.C
 		return nil, nil, err
 	}
 	if client == nil {
-		return nil, nil, fmt.Errorf("client %q not found on inbound %q", email, inboundRec.Remark)
+		return nil, nil, fmt.Errorf("%w: client %q not found on inbound %q", ErrNotFound, email, inboundRec.Remark)
 	}
 	return inboundRec, client, nil
 }
 
 func (n *Node) resolveInbound(remark string) (*panel.Inbound, error) {
 	if remark == "" {
-		return nil, fmt.Errorf("inbound remark is required")
+		return nil, fmt.Errorf("%w: inbound remark is required", ErrValidation)
 	}
 	inboundRec, err := n.panel.FindInboundByRemark(remark)
 	if err != nil {
 		return nil, err
 	}
 	if inboundRec == nil {
-		return nil, fmt.Errorf("inbound %q not found", remark)
+		return nil, fmt.Errorf("%w: inbound %q not found", ErrNotFound, remark)
 	}
 	return inboundRec, nil
 }

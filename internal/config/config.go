@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -49,27 +48,12 @@ func Load(path string) (*Config, error) {
 	return &cfg, nil
 }
 
-func SaveExample(path string) error {
-	if path == "" {
-		path = DefaultPath
+func (c *Config) Validate() error {
+	if c.API.Key == "" {
+		return fmt.Errorf("api.key is required")
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
+	if c.Panel.Token == "" && (c.Panel.Username == "" || c.Panel.Password == "") {
+		return fmt.Errorf("panel.token or panel username/password is required")
 	}
-	example := &Config{
-		Panel: PanelConfig{
-			URL:         "https://127.0.0.1:2053",
-			Token:       "CHANGE_ME_PANEL_API_TOKEN",
-			InsecureTLS: true,
-		},
-		API: APIConfig{
-			Listen: "127.0.0.1:9472",
-			Key:    "CHANGE_ME_NODE_API_KEY",
-		},
-	}
-	data, err := yaml.Marshal(example)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(path, data, 0o600)
+	return nil
 }

@@ -208,10 +208,6 @@ func clientPayload(client Client) map[string]any {
 	return payload
 }
 
-func isHTTP404(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "HTTP 404")
-}
-
 func (c *PanelClient) getJSON(path string, out any) error {
 	req, err := http.NewRequest(http.MethodGet, c.baseURL+path, nil)
 	if err != nil {
@@ -248,11 +244,12 @@ func (c *PanelClient) do(req *http.Request, out any) error {
 		return err
 	}
 	if resp.StatusCode >= 400 {
-		body := strings.TrimSpace(string(raw))
-		if body == "" {
-			return fmt.Errorf("panel %s %s: HTTP %d (check panel.token and panel.url base path)", req.Method, req.URL.Path, resp.StatusCode)
+		return &HTTPError{
+			Method: req.Method,
+			Path:   req.URL.Path,
+			Status: resp.StatusCode,
+			Body:   strings.TrimSpace(string(raw)),
 		}
-		return fmt.Errorf("panel %s %s: %s", req.Method, req.URL.Path, body)
 	}
 
 	var envelope APIResponse

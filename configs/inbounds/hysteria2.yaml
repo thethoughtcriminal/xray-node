@@ -3,6 +3,7 @@ protocol: hysteria
 listen: ""
 port: 10443
 enable: true
+tag: in-10443-udp
 settings:
   clients: []
   version: 2

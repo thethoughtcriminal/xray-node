@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -49,6 +50,10 @@ func (s *Server) ListenAndServe() error {
 	return s.http.ListenAndServe()
 }
 
+func (s *Server) Shutdown(ctx context.Context) error {
+	return s.http.Shutdown(ctx)
+}
+
 func (s *Server) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if s.cfg.API.Key == "" {
@@ -66,7 +71,7 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 func (s *Server) listInbounds(w http.ResponseWriter, r *http.Request) {
 	items, err := s.node.ListInbounds()
 	if err != nil {
-		writeError(w, http.StatusBadGateway, err.Error())
+		writeServiceError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, items)
@@ -89,7 +94,7 @@ func (s *Server) applyInbound(w http.ResponseWriter, r *http.Request) {
 	}
 	result, err := s.node.ApplyInbound(&spec)
 	if err != nil {
-		writeError(w, http.StatusBadGateway, err.Error())
+		writeServiceError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, result)
@@ -126,7 +131,7 @@ func (s *Server) addClient(w http.ResponseWriter, r *http.Request) {
 		Enable:        true,
 	})
 	if err != nil {
-		writeError(w, http.StatusBadGateway, err.Error())
+		writeServiceError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, client)
@@ -148,7 +153,7 @@ func (s *Server) setClientEnabled(w http.ResponseWriter, r *http.Request, enable
 		return
 	}
 	if err := s.node.SetClientEnabled(remark, email, enabled); err != nil {
-		writeError(w, http.StatusBadGateway, err.Error())
+		writeServiceError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"email": email, "enabled": enabled})
@@ -163,7 +168,7 @@ func (s *Server) clientStats(w http.ResponseWriter, r *http.Request) {
 	}
 	stats, err := s.node.ClientStats(remark, email)
 	if err != nil {
-		writeError(w, http.StatusBadGateway, err.Error())
+		writeServiceError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, stats)

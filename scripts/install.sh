@@ -12,7 +12,7 @@ CONFIG_PATH="/etc/xray-node/config.yaml"
 BIN_PATH="/usr/local/bin/xray-node"
 SERVICE_PATH="/etc/systemd/system/xray-node.service"
 APPLY_INBOUNDS="${XRAY_NODE_APPLY_INBOUNDS:-1}"
-# 3x-ui SSL during install: ip | domain | none (default: ip)
+# 3x-ui SSL during install: ip | none (default: ip). domain → use 3x-ui install directly.
 XUI_SSL_MODE="${XRAY_NODE_XUI_SSL_MODE:-ip}"
 XUI_ACME_HTTP_PORT="${XUI_ACME_HTTP_PORT:-80}"
 XUI_FOLDER="${XUI_FOLDER:-/usr/local/x-ui}"
@@ -323,9 +323,9 @@ apply_default_inbounds() {
     return
   fi
   echo "Applying default inbound templates..."
-  "${BIN_PATH}" inbound apply "${INSTALL_DIR}/configs/inbounds/vless-reality.yaml" --config "${CONFIG_PATH}" --non-interactive || true
-  "${BIN_PATH}" inbound apply "${INSTALL_DIR}/configs/inbounds/hysteria2.yaml" --config "${CONFIG_PATH}" --non-interactive || true
-  echo "Open 3x-ui panel and set Reality keys / TLS cert for hysteria2 if needed."
+  "${BIN_PATH}" inbound apply "${INSTALL_DIR}/configs/inbounds/vless-reality.yaml" --config "${CONFIG_PATH}" --non-interactive
+  "${BIN_PATH}" inbound apply "${INSTALL_DIR}/configs/inbounds/hysteria2.yaml" --config "${CONFIG_PATH}" --non-interactive
+  echo "Set TLS cert for hysteria2 in 3x-ui panel if needed (Set Cert from Panel)."
 }
 
 print_next_steps() {
@@ -348,7 +348,7 @@ Credentials: /etc/x-ui/install-result.env
 3) HTTP API (local):
    curl -H "X-API-Key: <key from config>" http://127.0.0.1:9472/healthz
 
-5) Uninstall everything:
+4) Uninstall everything:
    sudo xray-node uninstall
    # or: curl -fsSL .../scripts/uninstall.sh | sudo bash -s --
 

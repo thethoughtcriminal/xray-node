@@ -107,17 +107,7 @@ func generateRealityKeyPair() (privateKey, publicKey string, err error) {
 	if err != nil {
 		return "", "", fmt.Errorf("xray x25519: %w (%s)", err, strings.TrimSpace(string(out)))
 	}
-	text := string(out)
-	if m := realityPrivateKeyLine.FindStringSubmatch(text); len(m) == 2 {
-		privateKey = m[1]
-	}
-	if m := realityPublicKeyLine.FindStringSubmatch(text); len(m) == 2 {
-		publicKey = m[1]
-	}
-	if privateKey == "" || publicKey == "" {
-		return "", "", fmt.Errorf("parse xray x25519 output: %s", strings.TrimSpace(text))
-	}
-	return privateKey, publicKey, nil
+	return parseXrayX25519Output(string(out))
 }
 
 func findXrayBinary() (string, error) {

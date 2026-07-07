@@ -68,7 +68,7 @@ Interactive `inbound apply` prompts for port/SNI in TTY; `install.sh` uses `--no
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/install.sh` | 3x-ui + xray-node + SSL (default `XUI_SSL_MODE=ip`) |
+| `scripts/install.sh` | 3x-ui + xray-node + SSL (default `XRAY_NODE_XUI_SSL_MODE=ip`) |
 | `scripts/uninstall.sh` | Remove stack; supports `--yes`, `--keep-3xui` |
 
 Install script conventions:
@@ -84,6 +84,7 @@ Do not hardcode secrets. Do not commit `/etc/xray-node/config.yaml` or install-r
 
 - Listen default: `127.0.0.1:9472` (localhost only)
 - Auth: header `X-API-Key` (except `GET /healthz`)
+- Map service errors to HTTP status: validation → 400, not found → 404, conflict → 409, panel/upstream → 502
 - When adding endpoints, update `internal/api/server.go`, `README.md`, and `docs/TECHNICAL.md`
 
 ## Security

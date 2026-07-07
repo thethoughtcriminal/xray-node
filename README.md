@@ -19,7 +19,7 @@ Management layer for a VPN node running [3x-ui](https://github.com/MHSanaei/3x-u
 curl -fsSL https://raw.githubusercontent.com/thethoughtcriminal/xray-node/main/scripts/install.sh | sudo bash
 ```
 
-By default the installer requests a **Let's Encrypt IP certificate** for the 3x-ui panel (`XUI_SSL_MODE=ip`). Port **80** must be open on the VPS.
+By default the installer requests a **Let's Encrypt IP certificate** for the 3x-ui panel (`XRAY_NODE_XUI_SSL_MODE=ip`). Port **80** must be open on the VPS.
 
 ```bash
 # skip panel SSL (HTTP only)
@@ -54,11 +54,14 @@ sudo xray-node uninstall -y              # no confirmation
 sudo xray-node uninstall --keep-3xui     # remove only xray-node
 ```
 
-After install:
+After install, `install.sh` auto-configures `/etc/xray-node/config.yaml` from `/etc/x-ui/install-result.env` (panel URL with base path, API token, generated `api.key`). Verify:
 
-1. Open 3x-ui panel, create **API token** (Settings → API).
-2. Put token into `/etc/xray-node/config.yaml` → `panel.token`.
-3. `sudo systemctl restart xray-node`
+```bash
+xray-node inbound list
+sudo systemctl status xray-node
+```
+
+Credentials: `/etc/x-ui/install-result.env`
 
 ## Config
 
@@ -66,7 +69,8 @@ After install:
 
 ```yaml
 panel:
-  url: https://127.0.0.1:2053
+  # Full URL including 3x-ui base path (Panel Settings → Base Path)
+  url: https://127.0.0.1:2053/aBcDeFgHiJkLmNoPqR
   token: YOUR_3XUI_API_TOKEN
   insecure_tls: true
 
@@ -106,7 +110,7 @@ Auth: header `X-API-Key: <api.key from config>`
 |--------|------|-------------|
 | GET | `/healthz` | Health check (no auth) |
 | GET | `/inbounds` | List inbounds |
-| POST | `/inbounds/apply` | JSON body = inbound spec |
+| POST | `/inbounds/apply` | JSON body = inbound spec (no port/SNI prompts; send final values) |
 | POST | `/clients` | Add client |
 | POST | `/clients/{email}/enable?inbound=remark` | Enable |
 | POST | `/clients/{email}/disable?inbound=remark` | Disable |
@@ -130,17 +134,7 @@ make build
 ./bin/xray-node --config configs/config.example.yaml inbound list
 ```
 
-## GitHub
-
-`gh` was not available on the install machine. Create the remote repo and push:
-
-```bash
-gh repo create xray-node --public --source=. --remote=origin --push
-# or manually on github.com, then:
-git remote add origin git@github.com:YOUR_USER/xray-node.git
-git add -A && git commit -m "feat: initial VPN node manager for 3x-ui"
-git push -u origin main
-```
+CI runs `go test ./...` and `go build` on push/PR to `main` (`.github/workflows/ci.yml`).
 
 ## License
 
