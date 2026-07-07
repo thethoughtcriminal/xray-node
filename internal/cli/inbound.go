@@ -86,12 +86,14 @@ func resolveInboundOverrides(spec *inbound.Spec, portFlag int, sniFlag string, n
 		Port: portFlag,
 		SNI:  sniFlag,
 	}
-	if nonInteractive || !isTerminal() {
+	if nonInteractive || !canPrompt() {
 		return overrides, nil
 	}
 
+	p := newPrompter()
+
 	if overrides.Port == 0 {
-		port, err := promptInt("Port", spec.Port)
+		port, err := p.promptInt("Port", spec.Port)
 		if err != nil {
 			return overrides, err
 		}
@@ -103,7 +105,7 @@ func resolveInboundOverrides(spec *inbound.Spec, portFlag int, sniFlag string, n
 		if defaultSNI == "" {
 			defaultSNI = "www.microsoft.com"
 		}
-		sni, err := promptString("SNI", defaultSNI)
+		sni, err := p.promptString("SNI", defaultSNI)
 		if err != nil {
 			return overrides, err
 		}

@@ -3,60 +3,76 @@ package cli
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
 )
 
-func isTerminal() bool {
-	if fi, err := os.Stdin.Stat(); err == nil && (fi.Mode()&os.ModeCharDevice) != 0 {
-		return true
-	}
-	f, err := os.Open("/dev/tty")
-	if err != nil {
-		return false
-	}
-	_ = f.Close()
-	return true
+type prompter struct {
+	in  io.Reader
+	out io.Writer
 }
 
-func promptReader() *bufio.Reader {
-	if fi, err := os.Stdin.Stat(); err == nil && (fi.Mode()&os.ModeCharDevice) != 0 {
-		return bufio.NewReader(os.Stdin)
+func newPrompter() *prompter {
+	p := &prompter{out: os.Stderr}
+	if canPrompt() {
+		p.in = os.Stdin
 	}
-	f, err := os.Open("/dev/tty")
-	if err != nil {
-		return bufio.NewReader(os.Stdin)
-	}
-	return bufio.NewReader(f)
+	return p
 }
 
-func promptString(label, defaultValue string) (string, error) {
-	reader := promptReader()
-	if defaultValue != "" {
-		fmt.Printf("%s [%s]: ", label, defaultValue)
-	} else {
-		fmt.Printf("%s: ", label)
+// canPrompt is true only when stdin is an interactive terminal.
+// Do not treat /dev/tty availability as interactive (breaks curl|bash and ssh without -t).
+func canPrompt() bool {
+	fi, err := os.Stdin.Stat()
+	return err == nil && (fi.Mode()&os.ModeCharDevice) != 0
+}
+
+func (p *prompter) readLine() (string, error) {
+	if p.in == nil {
+		return "", fmt.Errorf("not running in a terminal; use --port, --sni, or --non-interactive")
+	}
+	reader, ok := p.in.(*bufio.Reader)
+	if !ok {
+		reader = bufio.NewReader(p.in)
+		p.in = reader
 	}
 	line, err := reader.ReadString('\n')
 	if err != nil {
 		return "", err
 	}
-	line = strings.TrimSpace(line)
+	return strings.TrimSpace(line), nil
+}
+
+func (p *prompter) promptString(label, defaultValue string) (string, error) {
+	if defaultValue != "" {
+		fmt.Fprintf(p.out, "%s [%s]: ", label, defaultValue)
+	} else {
+		fmt.Fprintf(p.out, "%s: ", label)
+	}
+	if w, ok := p.out.(interface{ Sync() error }); ok {
+		_ = w.Sync()
+	}
+	line, err := p.readLine()
+	if err != nil {
+		return "", err
+	}
 	if line == "" {
 		return defaultValue, nil
 	}
 	return line, nil
 }
 
-func promptInt(label string, defaultValue int) (int, error) {
-	reader := promptReader()
-	fmt.Printf("%s [%d]: ", label, defaultValue)
-	line, err := reader.ReadString('\n')
+func (p *prompter) promptInt(label string, defaultValue int) (int, error) {
+	fmt.Fprintf(p.out, "%s [%d]: ", label, defaultValue)
+	if w, ok := p.out.(interface{ Sync() error }); ok {
+		_ = w.Sync()
+	}
+	line, err := p.readLine()
 	if err != nil {
 		return 0, err
 	}
-	line = strings.TrimSpace(line)
 	if line == "" {
 		return defaultValue, nil
 	}

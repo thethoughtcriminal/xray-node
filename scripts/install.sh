@@ -168,8 +168,8 @@ apply_default_inbounds() {
     return
   fi
   echo "Applying default inbound templates..."
-  "${BIN_PATH}" inbound apply "${INSTALL_DIR}/configs/inbounds/vless-reality.yaml" --config "${CONFIG_PATH}" || true
-  "${BIN_PATH}" inbound apply "${INSTALL_DIR}/configs/inbounds/hysteria2.yaml" --config "${CONFIG_PATH}" || true
+  "${BIN_PATH}" inbound apply "${INSTALL_DIR}/configs/inbounds/vless-reality.yaml" --config "${CONFIG_PATH}" --non-interactive || true
+  "${BIN_PATH}" inbound apply "${INSTALL_DIR}/configs/inbounds/hysteria2.yaml" --config "${CONFIG_PATH}" --non-interactive || true
   echo "Open 3x-ui panel and set Reality keys / TLS cert for hysteria2 if needed."
 }
 
