@@ -10,29 +10,39 @@ import (
 )
 
 type prompter struct {
-	in  io.Reader
-	out io.Writer
+	in    io.Reader
+	out   io.Writer
+	close func() error
 }
 
-func newPrompter() *prompter {
-	p := &prompter{out: os.Stderr}
-	if canPrompt() {
-		p.in = os.Stdin
+func newPrompter() (*prompter, error) {
+	if fi, err := os.Stdin.Stat(); err == nil && (fi.Mode()&os.ModeCharDevice) != 0 {
+		return &prompter{in: os.Stdin, out: os.Stderr}, nil
 	}
-	return p
+	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+	if err != nil {
+		return nil, fmt.Errorf("not running in a terminal; use --port, --sni, or --non-interactive")
+	}
+	return &prompter{
+		in:    tty,
+		out:   tty,
+		close: tty.Close,
+	}, nil
 }
 
-// canPrompt is true only when stdin is an interactive terminal.
-// Do not treat /dev/tty availability as interactive (breaks curl|bash and ssh without -t).
 func canPrompt() bool {
-	fi, err := os.Stdin.Stat()
-	return err == nil && (fi.Mode()&os.ModeCharDevice) != 0
+	if fi, err := os.Stdin.Stat(); err == nil && (fi.Mode()&os.ModeCharDevice) != 0 {
+		return true
+	}
+	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+	if err != nil {
+		return false
+	}
+	_ = tty.Close()
+	return true
 }
 
 func (p *prompter) readLine() (string, error) {
-	if p.in == nil {
-		return "", fmt.Errorf("not running in a terminal; use --port, --sni, or --non-interactive")
-	}
 	reader, ok := p.in.(*bufio.Reader)
 	if !ok {
 		reader = bufio.NewReader(p.in)
@@ -45,14 +55,18 @@ func (p *prompter) readLine() (string, error) {
 	return strings.TrimSpace(line), nil
 }
 
-func (p *prompter) promptString(label, defaultValue string) (string, error) {
-	if defaultValue != "" {
-		fmt.Fprintf(p.out, "%s [%s]: ", label, defaultValue)
-	} else {
-		fmt.Fprintf(p.out, "%s: ", label)
-	}
+func (p *prompter) writePrompt(format string, args ...any) {
+	fmt.Fprintf(p.out, format, args...)
 	if w, ok := p.out.(interface{ Sync() error }); ok {
 		_ = w.Sync()
+	}
+}
+
+func (p *prompter) promptString(label, defaultValue string) (string, error) {
+	if defaultValue != "" {
+		p.writePrompt("%s [%s]: ", label, defaultValue)
+	} else {
+		p.writePrompt("%s: ", label)
 	}
 	line, err := p.readLine()
 	if err != nil {
@@ -65,10 +79,7 @@ func (p *prompter) promptString(label, defaultValue string) (string, error) {
 }
 
 func (p *prompter) promptInt(label string, defaultValue int) (int, error) {
-	fmt.Fprintf(p.out, "%s [%d]: ", label, defaultValue)
-	if w, ok := p.out.(interface{ Sync() error }); ok {
-		_ = w.Sync()
-	}
+	p.writePrompt("%s [%d]: ", label, defaultValue)
 	line, err := p.readLine()
 	if err != nil {
 		return 0, err

@@ -81,9 +81,9 @@ xray-node client enable --inbound vless-reality --email user@xray-node
 xray-node client stats --inbound vless-reality --email user@xray-node
 ```
 
-`inbound apply` updates an existing inbound by `remark` and **keeps existing clients** unless `settings.clients` is set in YAML. In a terminal it prompts for **port** (all inbounds) and **SNI** (VLESS Reality). Use `--port`, `--sni`, or `--non-interactive` to skip prompts.
+`inbound apply` updates an existing inbound by `remark` and **keeps existing clients** unless `settings.clients` is set in YAML. In a terminal it prompts for **port** (all inbounds) and **SNI** (VLESS Reality). Reality **x25519 keys** are generated automatically via `xray x25519` when missing. Use `--port`, `--sni`, or `--non-interactive` to skip prompts.
 
-For VLESS Reality, generate keys in 3x-ui UI after first apply (or set `realitySettings` in YAML). For Hysteria2, set TLS cert in panel (`Set Cert from Panel`).
+For VLESS Reality you no longer need to generate keys in the 3x-ui UI. For Hysteria2, set TLS cert in panel (`Set Cert from Panel`).
 
 ## HTTP API
 

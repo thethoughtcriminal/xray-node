@@ -69,6 +69,21 @@ func (n *Node) ApplyInbound(spec *inbound.Spec) (*panel.Inbound, error) {
 	if err != nil {
 		return nil, err
 	}
+	if existing != nil && spec.IsRealityVLESS() && !spec.HasRealityKeys() {
+		if err := spec.MergeRealityKeysFromStream(existing.StreamSettings.String()); err != nil {
+			return nil, err
+		}
+	}
+	if spec.IsRealityVLESS() && !spec.HasRealityKeys() {
+		if err := spec.EnsureRealityKeys(); err != nil {
+			return nil, err
+		}
+		stream, err = spec.StreamSettingsJSON()
+		if err != nil {
+			return nil, err
+		}
+		payload["streamSettings"] = stream
+	}
 	if existing == nil {
 		return n.panel.AddInbound(payload)
 	}

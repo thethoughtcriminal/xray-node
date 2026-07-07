@@ -90,7 +90,13 @@ func resolveInboundOverrides(spec *inbound.Spec, portFlag int, sniFlag string, n
 		return overrides, nil
 	}
 
-	p := newPrompter()
+	p, err := newPrompter()
+	if err != nil {
+		return overrides, err
+	}
+	if p.close != nil {
+		defer p.close()
+	}
 
 	if overrides.Port == 0 {
 		port, err := p.promptInt("Port", spec.Port)
