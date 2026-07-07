@@ -16,6 +16,16 @@ Management layer for a VPN node running [3x-ui](https://github.com/MHSanaei/3x-u
 curl -fsSL https://raw.githubusercontent.com/thethoughtcriminal/xray-node/main/scripts/install.sh | sudo bash
 ```
 
+By default the installer requests a **Let's Encrypt IP certificate** for the 3x-ui panel (`XUI_SSL_MODE=ip`). Port **80** must be open on the VPS.
+
+```bash
+# skip panel SSL (HTTP only)
+sudo XRAY_NODE_XUI_SSL_MODE=none ./scripts/install.sh
+
+# optional: ACME email, custom public IP, IPv6, alternate HTTP-01 port
+sudo XRAY_NODE_XUI_SSL_MODE=ip XUI_ACME_EMAIL=you@example.com ./scripts/install.sh
+```
+
 Or from a local clone:
 
 ```bash

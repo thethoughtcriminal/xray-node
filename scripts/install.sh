@@ -12,6 +12,11 @@ CONFIG_PATH="/etc/xray-node/config.yaml"
 BIN_PATH="/usr/local/bin/xray-node"
 SERVICE_PATH="/etc/systemd/system/xray-node.service"
 APPLY_INBOUNDS="${XRAY_NODE_APPLY_INBOUNDS:-1}"
+# 3x-ui SSL during install: ip | domain | none (default: ip)
+XUI_SSL_MODE="${XRAY_NODE_XUI_SSL_MODE:-ip}"
+XUI_ACME_HTTP_PORT="${XUI_ACME_HTTP_PORT:-80}"
+XUI_FOLDER="${XUI_FOLDER:-/usr/local/x-ui}"
+XUI_INSTALL_RESULT="/etc/x-ui/install-result.env"
 
 require_root() {
   if [[ "${EUID}" -ne 0 ]]; then
@@ -33,12 +38,161 @@ install_deps() {
 }
 
 install_3xui() {
+  export XUI_SSL_MODE
+  export XUI_ACME_HTTP_PORT
+  if [[ -n "${XUI_SSL_IPV6:-}" ]]; then
+    export XUI_SSL_IPV6
+  fi
+  if [[ -n "${XUI_ACME_EMAIL:-}" ]]; then
+    export XUI_ACME_EMAIL
+  fi
+  if [[ -n "${XUI_SERVER_IP:-}" ]]; then
+    export XUI_SERVER_IP
+  fi
+
   if command -v x-ui >/dev/null 2>&1; then
     echo "3x-ui already installed"
+    setup_xui_ssl_if_needed
     return
   fi
-  echo "Installing 3x-ui..."
+
+  echo "Installing 3x-ui (SSL mode: ${XUI_SSL_MODE})..."
   bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh)
+  setup_xui_ssl_if_needed
+}
+
+detect_server_ip() {
+  if [[ -n "${XUI_SERVER_IP:-}" ]]; then
+    echo "${XUI_SERVER_IP}"
+    return
+  fi
+  local ip=""
+  ip="$(curl -4 -fsS --max-time 5 https://api.ipify.org 2>/dev/null || true)"
+  if [[ -z "${ip}" ]]; then
+    ip="$(curl -4 -fsS --max-time 5 https://ifconfig.me 2>/dev/null || true)"
+  fi
+  if [[ -z "${ip}" ]]; then
+    ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
+  fi
+  echo "${ip}"
+}
+
+xui_has_ssl() {
+  if [[ -f /root/cert/ip/fullchain.pem && -f /root/cert/ip/privkey.pem ]]; then
+    return 0
+  fi
+  if x-ui setting -getCert true 2>/dev/null | grep -Eq 'cert: .+'; then
+    return 0
+  fi
+  if x-ui settings 2>/dev/null | grep -qiE 'SSL certificate configured'; then
+    return 0
+  fi
+  if [[ -f "${XUI_INSTALL_RESULT}" ]]; then
+    # shellcheck disable=SC1090
+    source "${XUI_INSTALL_RESULT}"
+    [[ "${XUI_ACCESS_URL:-}" == https://* ]] && return 0
+  fi
+  return 1
+}
+
+install_acme_sh() {
+  if [[ -x "${HOME}/.acme.sh/acme.sh" ]]; then
+    return 0
+  fi
+  echo "Installing acme.sh..."
+  curl -fsS https://get.acme.sh | sh >/dev/null
+}
+
+setup_xui_ssl_ip() {
+  local ipv4="${1:-}"
+  local ipv6="${2:-${XUI_SSL_IPV6:-}}"
+  local web_port="${XUI_ACME_HTTP_PORT:-80}"
+  local cert_dir="/root/cert/ip"
+  local xui_bin="${XUI_FOLDER}/x-ui"
+
+  if [[ -z "${ipv4}" ]]; then
+    ipv4="$(detect_server_ip)"
+  fi
+  if [[ -z "${ipv4}" ]]; then
+    echo "Could not detect server IPv4 for Let's Encrypt IP certificate" >&2
+    return 1
+  fi
+
+  echo "Setting up Let's Encrypt IP certificate for ${ipv4}..."
+  echo "Port ${web_port} must be reachable from the internet (HTTP-01)."
+
+  install_acme_sh
+  if [[ ! -x "${HOME}/.acme.sh/acme.sh" ]]; then
+    echo "acme.sh is not available" >&2
+    return 1
+  fi
+
+  systemctl stop x-ui 2>/dev/null || true
+  mkdir -p "${cert_dir}"
+
+  local domain_args="-d ${ipv4}"
+  if [[ -n "${ipv6}" ]]; then
+    domain_args="${domain_args} -d ${ipv6}"
+  fi
+
+  local reload_cmd="systemctl restart x-ui 2>/dev/null || true"
+  "${HOME}/.acme.sh/acme.sh" --set-default-ca --server letsencrypt --force >/dev/null 2>&1
+  if [[ -n "${XUI_ACME_EMAIL:-}" ]]; then
+    "${HOME}/.acme.sh/acme.sh" --register-account -m "${XUI_ACME_EMAIL}" >/dev/null 2>&1 || true
+  fi
+
+  if ! "${HOME}/.acme.sh/acme.sh" --issue \
+    ${domain_args} \
+    --standalone \
+    --server letsencrypt \
+    --certificate-profile shortlived \
+    --days 6 \
+    --httpport "${web_port}" \
+    --force; then
+    echo "Failed to issue IP certificate. Ensure port ${web_port} is open." >&2
+    return 1
+  fi
+
+  "${HOME}/.acme.sh/acme.sh" --installcert --force -d "${ipv4}" \
+    --key-file "${cert_dir}/privkey.pem" \
+    --fullchain-file "${cert_dir}/fullchain.pem" \
+    --reloadcmd "${reload_cmd}" >/dev/null 2>&1 || true
+
+  if [[ ! -f "${cert_dir}/fullchain.pem" || ! -f "${cert_dir}/privkey.pem" ]]; then
+    echo "Certificate files were not created" >&2
+    return 1
+  fi
+
+  chmod 600 "${cert_dir}/privkey.pem" 2>/dev/null || true
+  chmod 644 "${cert_dir}/fullchain.pem" 2>/dev/null || true
+  "${HOME}/.acme.sh/acme.sh" --upgrade --auto-upgrade >/dev/null 2>&1 || true
+
+  if [[ -x "${xui_bin}" ]]; then
+    "${xui_bin}" cert -webCert "${cert_dir}/fullchain.pem" -webCertKey "${cert_dir}/privkey.pem"
+  else
+    x-ui cert -webCert "${cert_dir}/fullchain.pem" -webCertKey "${cert_dir}/privkey.pem"
+  fi
+
+  systemctl restart x-ui 2>/dev/null || true
+  echo "Let's Encrypt IP certificate installed (auto-renews, ~6 days validity)."
+}
+
+setup_xui_ssl_if_needed() {
+  if [[ "${XUI_SSL_MODE}" == "none" ]]; then
+    return 0
+  fi
+  if [[ "${XUI_SSL_MODE}" != "ip" ]]; then
+    echo "Only XUI_SSL_MODE=ip is handled by xray-node install script (got: ${XUI_SSL_MODE})"
+    return 0
+  fi
+  if xui_has_ssl; then
+    echo "3x-ui SSL already configured"
+    return 0
+  fi
+  setup_xui_ssl_ip "$(detect_server_ip)" || {
+    echo "Warning: IP SSL setup failed; panel remains on HTTP." >&2
+    return 0
+  }
 }
 
 clone_or_update_repo() {
@@ -61,8 +215,6 @@ build_binary() {
     go build -o "${BIN_PATH}" ./cmd/xray-node
   )
 }
-
-XUI_INSTALL_RESULT="/etc/x-ui/install-result.env"
 
 configure_panel_from_xui() {
   local panel_url="" panel_token="" insecure_tls="true"
@@ -138,6 +290,9 @@ write_config() {
     echo "Config exists: ${CONFIG_PATH}"
   fi
   if [[ -f "${XUI_INSTALL_RESULT}" ]] || grep -q 'CHANGE_ME_PANEL_API_TOKEN' "${CONFIG_PATH}"; then
+    configure_panel_from_xui || true
+  fi
+  if xui_has_ssl; then
     configure_panel_from_xui || true
   fi
 }
