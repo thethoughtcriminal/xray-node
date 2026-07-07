@@ -6,14 +6,14 @@ func TestApplyOverridesPortAndSNI(t *testing.T) {
 	spec := &Spec{
 		Remark:   "vless-reality",
 		Protocol: "vless",
-		Port:     443,
+		Port:     8443,
 		StreamSettings: map[string]any{
 			"network":  "tcp",
 			"security": "reality",
 			"realitySettings": map[string]any{
-				"dest": "www.microsoft.com:443",
+				"target": "deepl.com:443",
 				"serverNames": []any{
-					"www.microsoft.com",
+					"deepl.com",
 				},
 			},
 		},

@@ -67,8 +67,8 @@ api:
 ```bash
 # Inbounds
 xray-node inbound apply configs/inbounds/vless-reality.yaml
-# prompts: Port [443], SNI [www.microsoft.com]
-xray-node inbound apply configs/inbounds/vless-reality.yaml --port 8443 --sni deepl.com
+# prompts: Port [8443], SNI [www.deepl.com]
+xray-node inbound apply configs/inbounds/vless-reality.yaml --port 8443 --sni www.deepl.com
 xray-node inbound apply configs/inbounds/hysteria2.yaml
 xray-node inbound list
 

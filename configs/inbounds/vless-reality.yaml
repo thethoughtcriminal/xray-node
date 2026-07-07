@@ -1,35 +1,50 @@
 remark: vless-reality
 protocol: vless
 listen: ""
-port: 443
+port: 8443
 enable: true
+tag: in-8443-tcp
 settings:
   clients: []
   decryption: none
-  fallbacks: []
+  encryption: none
+  testseed:
+    - 900
+    - 500
+    - 900
+    - 256
 streamSettings:
   network: tcp
+  tcpSettings:
+    acceptProxyProtocol: false
+    header:
+      type: none
   security: reality
   realitySettings:
     show: false
-    dest: www.microsoft.com:443
     xver: 0
+    target: deepl.com:443
     serverNames:
-      - www.microsoft.com
+      - www.deepl.com
     privateKey: ""
     minClientVer: ""
     maxClientVer: ""
     maxTimediff: 0
     shortIds:
-      - ""
+      - "0d"
+      - b78c
+      - 98f3b8
+      - 03aa4eeb
+      - 9d7c9b7a66aa18db
+      - a0c9fa5d83
+      - 247cbe210f2f
+      - c03e117aa66430
+    mldsa65Seed: ""
     settings:
       publicKey: ""
-      fingerprint: chrome
+      fingerprint: qq
       serverName: ""
       spiderX: /
+      mldsa65Verify: ""
 sniffing:
-  enabled: true
-  destOverride:
-    - http
-    - tls
-    - quic
+  enabled: false

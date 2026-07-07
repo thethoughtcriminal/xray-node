@@ -109,7 +109,7 @@ func resolveInboundOverrides(spec *inbound.Spec, portFlag int, sniFlag string, n
 	if spec.IsRealityVLESS() && overrides.SNI == "" {
 		defaultSNI := spec.DefaultSNI()
 		if defaultSNI == "" {
-			defaultSNI = "www.microsoft.com"
+			defaultSNI = "www.deepl.com"
 		}
 		sni, err := p.promptString("SNI", defaultSNI)
 		if err != nil {
