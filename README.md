@@ -10,7 +10,7 @@ Management layer for a VPN node running [3x-ui](https://github.com/MHSanaei/3x-u
 - Apply/update inbound from YAML (`vless-reality`, `hysteria2` templates included)
 - Add client, enable/disable client
 - Per-client traffic stats via 3x-ui API
-- Local HTTP API for automation (subscription server later)
+- Local HTTP API for automation
 
 ## Quick install (VPS)
 
