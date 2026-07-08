@@ -205,6 +205,9 @@ func clientPayload(client Client) map[string]any {
 	if client.Password != "" {
 		payload["password"] = client.Password
 	}
+	if client.Comment != "" {
+		payload["comment"] = client.Comment
+	}
 	return payload
 }
 

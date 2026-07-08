@@ -107,6 +107,7 @@ type addClientRequest struct {
 	SubID         string `json:"sub_id"`
 	Flow          string `json:"flow"`
 	Auth          string `json:"auth"`
+	Comment       string `json:"comment"`
 	TotalGB       int64  `json:"total_gb"`
 	ExpiryDays    int    `json:"expiry_days"`
 	LimitIP       int    `json:"limit_ip"`
@@ -125,6 +126,7 @@ func (s *Server) addClient(w http.ResponseWriter, r *http.Request) {
 		SubID:         req.SubID,
 		Flow:          req.Flow,
 		Auth:          req.Auth,
+		Comment:       req.Comment,
 		TotalGB:       req.TotalGB,
 		ExpiryDays:    req.ExpiryDays,
 		LimitIP:       req.LimitIP,

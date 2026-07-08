@@ -54,4 +54,5 @@ type Client struct {
 	Flow       string `json:"flow,omitempty"`
 	Auth       string `json:"auth,omitempty"`
 	Password   string `json:"password,omitempty"`
+	Comment    string `json:"comment,omitempty"`
 }

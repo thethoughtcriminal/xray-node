@@ -116,6 +116,7 @@ type AddClientInput struct {
 	SubID         string
 	Flow          string
 	Auth          string
+	Comment       string
 	TotalGB       int64
 	ExpiryDays    int
 	LimitIP       int
@@ -145,6 +146,7 @@ func (n *Node) AddClient(in AddClientInput) (*panel.Client, error) {
 		SubID:      in.SubID,
 		Flow:       in.Flow,
 		Auth:       in.Auth,
+		Comment:    in.Comment,
 	}
 	if in.UUID != "" {
 		client.ID = in.UUID
@@ -187,6 +189,14 @@ func (n *Node) ClientStats(inboundRemark, email string) (*panel.ClientTraffic, e
 
 func (n *Node) ListInbounds() ([]panel.Inbound, error) {
 	return n.panel.ListInbounds()
+}
+
+func (n *Node) ListClients(inboundRemark string) ([]panel.Client, error) {
+	inboundRec, err := n.resolveInbound(inboundRemark)
+	if err != nil {
+		return nil, err
+	}
+	return n.panel.GetInboundClients(*inboundRec)
 }
 
 func (n *Node) findClient(inboundRemark, email string) (*panel.Inbound, *panel.Client, error) {
