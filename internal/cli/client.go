@@ -109,7 +109,26 @@ func newClientCmd() *cobra.Command {
 	_ = statsCmd.MarkFlagRequired("inbound")
 	_ = statsCmd.MarkFlagRequired("email")
 
-	cmd.AddCommand(addCmd, enableCmd, disableCmd, statsCmd)
+	listCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List clients on inbound",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Load(loadConfigPath())
+			if err != nil {
+				return err
+			}
+			node := service.New(cfg)
+			clients, err := node.ListClients(inboundRemark)
+			if err != nil {
+				return err
+			}
+			return printJSON(clients)
+		},
+	}
+	listCmd.Flags().StringVar(&inboundRemark, "inbound", "", "inbound remark (required)")
+	_ = listCmd.MarkFlagRequired("inbound")
+
+	cmd.AddCommand(addCmd, enableCmd, disableCmd, statsCmd, listCmd)
 	return cmd
 }
 

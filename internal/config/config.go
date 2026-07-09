@@ -57,3 +57,23 @@ func (c *Config) Validate() error {
 	}
 	return nil
 }
+
+func Save(path string, cfg *Config) error {
+	if path == "" {
+		path = DefaultPath
+	}
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0o600)
+}
+
+func SetAPIListen(path, listen string) error {
+	cfg, err := Load(path)
+	if err != nil {
+		return err
+	}
+	cfg.API.Listen = listen
+	return Save(path, cfg)
+}

@@ -79,6 +79,26 @@ api:
   key: YOUR_NODE_API_KEY
 ```
 
+## Join xray-master (optional)
+
+Install works **without** a master. Connect later when you have an enroll token:
+
+```bash
+# on master:
+xray-master node token create --name nl-1
+
+# on VPS (after install):
+xray-node join --master-url https://sub.example.com --token TOKEN --name nl-1
+
+# or:
+curl -fsSL https://raw.githubusercontent.com/themnts/xray-node/main/scripts/join.sh | \
+  sudo MASTER_URL=https://sub.example.com ENROLL_TOKEN=TOKEN NODE_NAME=nl-1 bash
+```
+
+`join` opens the local API (`0.0.0.0:9472`), optionally adds a ufw rule for `--master-ip`, and calls `POST /nodes/enroll` on the master.
+
+On master after join: `xray-master sync users`
+
 ## CLI
 
 ```bash
